@@ -175,6 +175,8 @@ def eval_question(question):
     print 'Testing question: %s' % question
     print '--------------------------------------------------------------------'
     all_correct = True
+    print question
+    print listdir('.')
     for file_name in [name for name in listdir('test_cases/' + question) if 'test' in name]:
         try:
             all_correct = run_test('test_cases/' + question + '/' + file_name) and all_correct

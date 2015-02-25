@@ -187,7 +187,15 @@ class Assignment:
 def consistent(assignment, csp, var, value):
 	"""Question 1"""
 	"""YOUR CODE HERE"""
-
+	for con in csp.unaryConstraints:
+		if con.affects(var) and not con.isSatisfied(value):
+			return False
+	for con in csp.binaryConstraints:
+		if con.affects(var):
+			var2=con.otherVariable(var)
+			value2=assignment.assignedValues[var2]
+			if not con.isSatisfied(value,value2):
+				return False
 	return True
 
 
@@ -214,6 +222,19 @@ def consistent(assignment, csp, var, value):
 def recursiveBacktracking(assignment, csp, orderValuesMethod, selectVariableMethod):
 	"""Question 1"""
 	"""YOUR CODE HERE"""
+	if assignment.isComplete():
+		return assignment
+	variable=selectVariableMethod(assignment,csp)
+	if variable==None:
+		return None
+	for value in orderValuesMethod(assignment,csp,variable):
+		if consistent(assignment,csp,variable,value):
+			assignment.assignedValues[variable]=value
+			result=recursiveBacktracking(assignment,csp,orderValuesMethod,selectVariableMethod)
+			if not result == None:
+				return result
+			else:
+				assignment.assignedValues[variable]=None
 	return None
 
 
@@ -264,7 +285,30 @@ def minimumRemainingValuesHeuristic(assignment, csp):
 	domains = assignment.varDomains
 	"""Question 2"""
 	"""YOUR CODE HERE"""
-
+	val=None
+	possibleList=[]
+	for var in domains:
+		if not assignment.isAssigned(var):
+			if val==None:
+				val=len(domains[var])
+				possibleList=[var]
+			elif val>len(domains[var]):
+				possibleList=[var]
+				val=len(domains[var])
+			elif val==len(domains[var]):
+				possibleList.append(var)
+	val=None
+	for var in possibleList:
+		c=0
+		for con in csp.binaryConstraints:
+			if con.affects(var):
+				c+=1
+		if val==None:
+			val=c
+			nextVar=var
+		if c>val:
+			val=c
+			nextVar=var
 	return nextVar
 
 
@@ -294,7 +338,9 @@ def leastConstrainingValuesHeuristic(assignment, csp, var):
 	"""Hint: Creating a helper function to count the number of constrained values might be useful"""
 	"""Question 3"""
 	"""YOUR CODE HERE"""
-
+	for con in csp.binaryConstraints:
+		var2=con.otherVariable(var)
+		if con.affects(var):
 	return values
 
 
