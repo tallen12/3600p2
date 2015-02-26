@@ -471,17 +471,27 @@ def revise(assignment, csp, var1, var2, constraint):
 	inferences = set([])
 	"""Question 5"""
 	"""YOUR CODE HERE"""
-	values1=assignment.varDomains[var1]
-	values2=assignment.varDomains[var2]
-	for value1 in values1:
-		for value2 in values2:
-			if not constraint.isSatisfied(value,value2):
-				assignment.varDomains[var2].remove(value2)
-				inference.add((var2,value2))
-			if len(domains[var2])==0:
-				for vari,value in inferences:
-					domains[vari].add(value)
-				return None
+	values1=[]
+	values2=[]
+	if assignment.isAssigned(var1):
+		values1=[assignment.assignedValues[var1]]
+	else:
+		values1=list(assignment.varDomains[var1])
+	if assignment.isAssigned(var2):
+		values2=[assignment.assignedValues[var2]]
+	else:
+		values2=list(assignment.varDomains[var2])
+	for value2 in values2:
+		found=True
+		for value1 in values1:
+			found= found and not constraint.isSatisfied(value1,value2)
+		if found:
+			assignment.varDomains[var2].remove(value2)
+			inferences.add((var2,value2))
+	if len(assignment.varDomains[var2])==0:
+		for vari,value in inferences:
+			assignment.varDomains[vari].add(value)
+		return None
 	return inferences
 
 
@@ -507,7 +517,28 @@ def maintainArcConsistency(assignment, csp, var, value):
 	"""Question 5"""
 	"""YOUR CODE HERE"""
 	queue=[]
-	
+	for v in list(assignment.varDomains[var]):
+		if not v==value:
+			inferences.add((var,v))
+			assignment.varDomains[var].remove(v)
+	for con in csp.binaryConstraints:
+		if con.affects(var):
+			var2=con.otherVariable(var)
+			queue.append((var,var2,con))
+	while queue:
+		var1,var2,cons=queue.pop()
+		inference=revise(assignment,csp,var1,var2,cons)
+		if inference==None:
+			for vari,vali in inferences:
+				assignment.varDomains[vari].add(vali)
+			return None
+		if len(inference)>0:
+			inferences=inferences.union(inference)
+			for con in csp.binaryConstraints:
+				if con.affects(var2):
+					var3=con.otherVariable(var2)
+					if not assignment.isAssigned(var3):
+						queue.append((var2,var3,con))
 	return inferences
 
 
@@ -527,7 +558,32 @@ def AC3(assignment, csp):
 	"""Hint: implement revise first and use it as a helper function"""
 	"""Question 6"""
 	"""YOUR CODE HERE"""
-
+	queue=[]
+	for con in csp.unaryConstraints:
+		var=con.var
+		for value in list(assignment.varDomains[var]):
+			if not con.isSatisfied(value):
+				assignment.varDomains[var].remove(value)
+	for con in csp.binaryConstraints:
+		var1=con.var1
+		var2=con.var2
+		queue.append((var1,var2,con))
+	while queue:
+		var1,var2,cons=queue.pop()
+		inference=revise(assignment,csp,var1,var2,cons)
+		if inference==None:
+			for vari,vali in inferences:
+				assignment.varDomains[vari].add(vali)
+		elif len(inference)>0:
+			inferences=inferences.union(inference)
+			for con in csp.binaryConstraints:
+				if con.affects(var2):
+					var3=con.otherVariable(var2)
+					if not assignment.isAssigned(var3):
+						queue.append((var2,var3,con))
+	for var in assignment.varDomains:
+		if len(assignment.varDomains[var])==0:
+			return None
 	return assignment
 
 
