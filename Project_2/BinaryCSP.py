@@ -231,12 +231,6 @@ def recursiveBacktracking(assignment, csp, orderValuesMethod, selectVariableMeth
 	for value in orderValuesMethod(assignment,csp,variable):
 		if consistent(assignment,csp,variable,value):
 			assignment.assignedValues[variable]=value
-			for con in csp.binaryConstraints:
-				if con.affects(variable):
-					var2=con.otherVariable(variable)
-					for value2 in list(assignment.varDomains[var2]):
-						if not con.isSatisfied(value,value2):
-							filter(lambda a: a != value2, assignment.varDomains[var2])
 			result=recursiveBacktracking(assignment,csp,orderValuesMethod,selectVariableMethod)
 			if not result == None:
 				return result
@@ -391,7 +385,17 @@ def forwardChecking(assignment, csp, var, value):
 	domains = assignment.varDomains
 	"""Question 4"""
 	"""YOUR CODE HERE"""
-
+	for con in csp.binaryConstraints:
+		if con.affects(var):
+			var2=con.otherVariable(var)	
+			for value2 in list(assignment.varDomains[var2]):
+				if not con.isSatisfied(value,value2):
+					domains[var2].remove(value2)
+					inferences.add((var2,value2))
+				if len(domains[var2])==0:
+					for vari,value in inferences:
+						domains[vari].add(value)
+					return None
 	return inferences
 
 """
@@ -423,8 +427,26 @@ def forwardChecking(assignment, csp, var, value):
 def recursiveBacktrackingWithInferences(assignment, csp, orderValuesMethod, selectVariableMethod, inferenceMethod):
 	"""Question 4"""
 	"""YOUR CODE HERE"""
+	if assignment.isComplete():
+		return assignment
+	variable=selectVariableMethod(assignment,csp)
+	if variable==None:
+		return None
+	for value in orderValuesMethod(assignment,csp,variable):
+		if consistent(assignment,csp,variable,value):
+			assignment.assignedValues[variable]=value
+			inference=inferenceMethod(assignment,csp,variable,value)
+			result=None
+			if inference is not None:
+				result=recursiveBacktrackingWithInferences(assignment,csp,orderValuesMethod,selectVariableMethod,inferenceMethod)
+			if not result == None:
+				return result
+			else:
+				assignment.assignedValues[variable]=None
+				if inference is not None:
+					for var,value in inference:
+						assignment.varDomains[var].add(value)
 	return None
-
 
 
 """
@@ -449,7 +471,17 @@ def revise(assignment, csp, var1, var2, constraint):
 	inferences = set([])
 	"""Question 5"""
 	"""YOUR CODE HERE"""
-
+	values1=assignment.varDomains[var1]
+	values2=assignment.varDomains[var2]
+	for value1 in values1:
+		for value2 in values2:
+			if not constraint.isSatisfied(value,value2):
+				assignment.varDomains[var2].remove(value2)
+				inference.add((var2,value2))
+			if len(domains[var2])==0:
+				for vari,value in inferences:
+					domains[vari].add(value)
+				return None
 	return inferences
 
 
@@ -474,7 +506,8 @@ def maintainArcConsistency(assignment, csp, var, value):
 	"""Hint: implement revise first and use it as a helper function"""
 	"""Question 5"""
 	"""YOUR CODE HERE"""
-
+	queue=[]
+	
 	return inferences
 
 
@@ -488,7 +521,7 @@ def maintainArcConsistency(assignment, csp, var, value):
 	Returns:
 		Assignment
 		the updated assignment after inferences are made or None if an inconsistent assignment
-"""
+""" 
 def AC3(assignment, csp):
 	inferences = set([])
 	"""Hint: implement revise first and use it as a helper function"""
@@ -525,7 +558,7 @@ def solve(csp, orderValuesMethod=leastConstrainingValuesHeuristic, selectVariabl
 	if inferenceMethod is None or inferenceMethod==noInferences:
 		assignment = recursiveBacktracking(assignment, csp, orderValuesMethod, selectVariableMethod)
 	else:
-		assignment = recursiveBacktrackingWithInferences(assignment, csp, orderValuesMethod, selectVariableMethod, inferenceMethod, inferenceMethod)
+		assignment = recursiveBacktrackingWithInferences(assignment, csp, orderValuesMethod, selectVariableMethod, inferenceMethod)
 	if assignment == None:
 		return assignment
 
