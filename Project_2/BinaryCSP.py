@@ -473,21 +473,17 @@ def revise(assignment, csp, var1, var2, constraint):
 	"""YOUR CODE HERE"""
 	values1=[]
 	values2=[]
-	if assignment.isAssigned(var1):
-		values1=[assignment.assignedValues[var1]]
-	else:
-		values1=list(assignment.varDomains[var1])
-	if assignment.isAssigned(var2):
-		values2=[assignment.assignedValues[var2]]
-	else:
-		values2=list(assignment.varDomains[var2])
+	values1=list(assignment.varDomains[var1])
+	values2=list(assignment.varDomains[var2])
 	for value2 in values2:
 		found=True
 		for value1 in values1:
+			#print value1,value2,constraint.isSatisfied(value1,value2)
 			found= found and not constraint.isSatisfied(value1,value2)
 		if found:
-			assignment.varDomains[var2].remove(value2)
 			inferences.add((var2,value2))
+	for var,val in inferences:			
+		assignment.varDomains[var].remove(val)
 	if len(assignment.varDomains[var2])==0:
 		for vari,value in inferences:
 			assignment.varDomains[vari].add(value)
@@ -559,21 +555,18 @@ def AC3(assignment, csp):
 	"""Question 6"""
 	"""YOUR CODE HERE"""
 	queue=[]
-	for con in csp.unaryConstraints:
-		var=con.var
-		for value in list(assignment.varDomains[var]):
-			if not con.isSatisfied(value):
-				assignment.varDomains[var].remove(value)
+	#print assignment
 	for con in csp.binaryConstraints:
 		var1=con.var1
 		var2=con.var2
 		queue.append((var1,var2,con))
+		queue.append((var2,var1,con))
+	
 	while queue:
 		var1,var2,cons=queue.pop()
 		inference=revise(assignment,csp,var1,var2,cons)
 		if inference==None:
-			for vari,vali in inferences:
-				assignment.varDomains[vari].add(vali)
+			return None 
 		elif len(inference)>0:
 			inferences=inferences.union(inference)
 			for con in csp.binaryConstraints:
@@ -581,6 +574,7 @@ def AC3(assignment, csp):
 					var3=con.otherVariable(var2)
 					if not assignment.isAssigned(var3):
 						queue.append((var2,var3,con))
+						queue.append((var3,var2,con))
 	for var in assignment.varDomains:
 		if len(assignment.varDomains[var])==0:
 			return None
